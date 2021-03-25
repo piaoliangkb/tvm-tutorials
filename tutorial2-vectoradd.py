@@ -5,7 +5,10 @@ import tvm.testing
 from tvm import te
 import numpy as np
 
+# host side codegen target, default is llvm (if llvm is enabled)
 tgt_host = "llvm"
+# compilation target
+# tgt = "llvm" also works well
 tgt = "c"
 
 # n representes the shape
@@ -18,6 +21,8 @@ B = te.placeholder((n,), name="B")
 #   - the shape of the tensor
 #   - a lambda function describing the computation rule
 #   for each position of the tensor
+
+# tvm.te is tensor expression language
 C = te.compute(A.shape, lambda i: A[i] + B[i], name="C")
 print(type(C))
 
@@ -25,6 +30,8 @@ print(type(C))
 s = te.create_schedule(C.op)
 
 func_add = tvm.build(s, [A, B, C], tgt, target_host=tgt_host, name="vectorAdd")
+# below lines will cause error
+# func_add = tvm.build(s, [A, B, C], target=tgt, name="vectorAdd")
 
 print(func_add.get_source())
 
