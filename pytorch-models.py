@@ -10,6 +10,8 @@ from torchvision import transforms
 import numpy as np
 from PIL import Image
 
+import time
+
 
 # Global log func
 def logs(info: str):
@@ -93,7 +95,9 @@ m = graph_runtime.GraphModule(lib["default"](ctx))
 # Set inputs
 m.set_input(input_name, tvm.nd.array(img.astype(dtype)))
 # Run forward execution of the graph
+st = time.time()
 m.run()
+logs(f"TVM model prediction time: {time.time() - st}")
 # Get output
 # Use Compiled TVM module and pytorch image to get output
 tvm_output = m.get_output(0)
@@ -147,8 +151,10 @@ tvm_class_key = class_id_to_key[top1_tvm]
 with torch.no_grad():
     torch_img = torch.from_numpy(img)
     print("Get torch image type: ", type(torch_img))
+    st = time.time()
     output = model(torch_img)
     print("Use torch image as torch model input, get output type: ", type(output))
+    logs(f"Torch model prediction time: {time.time() - st}")
 
     top1_torch = np.argmax(output.numpy())
     torch_class_key = class_id_to_key[top1_torch]
