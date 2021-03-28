@@ -5,6 +5,12 @@ import tvm.testing
 from tvm import te
 import numpy as np
 
+
+# Global log func
+def logs(info: str):
+    print(f"=================: {info}")
+
+
 # host side codegen target, default is llvm (if llvm is enabled)
 tgt_host = "llvm"
 # compilation target
@@ -25,15 +31,19 @@ B = te.placeholder((n,), name="B")
 # tvm.te is tensor expression language
 C = te.compute(A.shape, lambda i: A[i] + B[i], name="C")
 print(type(C))
+# compute(C, body=[(A[i] + B[i])], axis=[iter_var(i, range(min=0, ext=n))], reduce_axis=[], tag=, attrs={})
+print("C.op: ", C.op)
 
 # create schedule
 s = te.create_schedule(C.op)
+# Return a readable C like statement to show the schedule result.
+print(tvm.lower(s, [A, B, C], simple_mode=True))
 
 func_add = tvm.build(s, [A, B, C], tgt, target_host=tgt_host, name="vectorAdd")
 # below lines will cause error
 # func_add = tvm.build(s, [A, B, C], target=tgt, name="vectorAdd")
 
-print(func_add.get_source())
+# print(func_add.get_source())
 
 ctx = tvm.context(tgt, 0)
 n = 1024
@@ -43,9 +53,9 @@ c = tvm.nd.array(np.zeros(n, C.dtype), ctx)
 func_add(a, b, c)
 tvm.testing.assert_allclose(c.asnumpy(), a.asnumpy() + b.asnumpy())
 
-print(a)
-print(b)
-print(c)
+# print(a)
+# print(b)
+# print(c)
 
 # save compiled model
 from tvm.contrib import cc, utils
@@ -53,4 +63,4 @@ from tvm.contrib import cc, utils
 temp = utils.tempdir()
 func_add.save(temp.relpath("func_add.o"))
 
-print(func_add)
+# print(func_add)
