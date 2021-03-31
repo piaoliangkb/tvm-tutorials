@@ -94,3 +94,89 @@ logs(f"First, tile 2 axes into 4 axes:\n{tvm.lower(s, [A, B], simple_mode=True)}
 # https://halide-lang.org/docs/tutorial_2lesson_05_scheduling_1_8cpp-example.html
 fused = s[B].fuse(xi, yi)
 logs(f"Second, fuse two inner axes into one:\n{tvm.lower(s, [A, B], simple_mode=True)}")
+
+
+###############################
+########### reorder ###########
+###############################
+# Reorder the axes in the specified order
+example = "B = A in matrix"
+logs(example)
+A = te.placeholder((m, n), name="A")
+B = te.compute((m, n), lambda i, j: A[i, j], name="B")
+
+s = te.create_schedule(B.op)
+# tile to four axes first: (i.outer, j.outer, i.inner, j.inner)
+xo, yo, xi, yi = s[B].tile(B.op.axis[0], B.op.axis[1], x_factor=10, y_factor=5)
+logs(f"First, tile 2 axes into 4 axes:\n{tvm.lower(s, [A, B], simple_mode=True)}")
+# then reorder the axes: (i.inner, j.outer, i.outer, j.inner)
+s[B].reorder(xi, yo, xo, yi)
+logs(f"Second, reorder the axes to i.inner, j.outer, i.outer, j.inner:\n{tvm.lower(s, [A, B], simple_mode=True)}")
+
+
+###############################
+############# bind ############
+###############################
+# Bind a specified axis with a thread axis, used in gpu programming.
+example = "multiply vector by scalar"
+logs(example)
+A = te.placeholder((n,), name="A")
+B = te.compute(A.shape, lambda i: A[i] * 2, name="B")
+
+s = te.create_schedule(B.op)
+# Split into two axes
+bx, tx = s[B].split(B.op.axis[0], factor=64)
+s[B].bind(bx, te.thread_axis("blockIdx.x"))
+s[B].bind(tx, te.thread_axis("threadIdx.x"))
+# If change simple_mode, TVM IR will change.
+logs(f"Thread bind: {tvm.lower(s, [A, B], simple_mode=True)}")
+
+
+###############################
+######### compute_inline ######
+###############################
+# Mark one stage as inline.
+example = "Two stage compute: B = A + 1, C = B * 2; when inline: C = (A + 1) * 2"
+logs(example)
+A = te.placeholder((m,), name="A")
+B = te.compute((m,), lambda i: A[i] + 1, name="B")
+C = te.compute((m,), lambda i: B[i] * 2, name="C")
+
+s = te.create_schedule(C.op)
+s[B].compute_inline()
+logs(f"After inline some stage: {tvm.lower(s, [A, B], simple_mode=True)}")
+
+###############################
+########## compute_at #########
+###############################
+# Compute one computation at another axis of computation
+example = "Two stage compute: B = A + 1, C = B * 2"
+logs(example)
+A = te.placeholder((m,), name="A")
+B = te.compute((m,), lambda i: A[i] + 1, name="B")
+C = te.compute((m,), lambda i: B[i] * 2, name="C")
+
+s = te.create_schedule(C.op)
+logs(f"By default, it will finish B then finish C:\n{tvm.lower(s, [A, B, C], simple_mode=True)}")
+
+# Move computation of B into the first axis of computation of C
+s[B].compute_at(s[C], C.op.axis[0])  # Cannot compute C at B
+logs(f"After compute B at first axis of C:\n{tvm.lower(s, [A, B, C], simple_mode=True)}")
+
+
+###############################
+######### compute_root ########
+###############################
+# Move computation of one stage to the root
+example = "Two stage compute: B = A + 1, C = B * 2"
+logs(example)
+A = te.placeholder((m,), name="A")
+B = te.compute((m,), lambda i: A[i] + 1, name="B")
+C = te.compute((m,), lambda i: B[i] * 2, name="C")
+
+s = te.create_schedule(C.op)
+# Move computation of B into C
+s[B].compute_at(s[C], C.op.axis[0])
+# Move computation of B out
+s[B].compute_root()
+logs(f"After compute at root:\n{tvm.lower(s, [A, B, C], simple_mode=True)}")
