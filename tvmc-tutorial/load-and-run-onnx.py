@@ -5,6 +5,11 @@ from tvm.contrib.download import download_testdata
 from scipy.special import softmax
 import time
 
+# ref: 
+# https://github.com/Azure/MachineLearningNotebooks/blob/master/how-to-use-azureml/deployment/onnx/onnx-modelzoo-aml-deploy-resnet50.ipynb
+# https://pytorch.org/docs/stable/onnx.html
+# https://pytorch.org/tutorials/advanced/super_resolution_with_onnxruntime.html
+
 onnx_model = onnx.load("resnet50-v2-7.onnx")
 onnx.checker.check_model(onnx_model)
 
