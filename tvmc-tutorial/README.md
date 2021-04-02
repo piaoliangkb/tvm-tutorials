@@ -27,4 +27,4 @@ TVM docs ref: [Getting Started with TVM command line driver - TVMC](https://tvm.
     python3 -m tvm.driver.tvmc compile --tuning-records cascadelake_autotuner_records.json --target "llvm -mcpu=cascadelake" --output aftertuned_module.tar resnet50-v2-7.onnx
     ```
 
-- torch-loadonnx.py: use pytorch to load onnx and predict
+- load-and-run-onnx.py: load onnx model, use `imagenet_cat.npz` as input data to predict
