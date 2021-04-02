@@ -5,7 +5,7 @@ from tvm import relay
 from tvm.relay import testing
 import tvm
 from tvm import te
-from tvm.contrib import graph_runtime
+from tvm.contrib import graph_executor
 import tvm.testing
 
 # Define a neuralnetwork with relay python frontend.
@@ -56,11 +56,11 @@ with tvm.transform.PassContext(opt_level=optimization_level):
 # Create graph runtime and run the module on Raspberry
 
 # Create random input
-ctx = tvm.context(target, 0)  # or tvm.gpu()? what is the difference
+ctx = tvm.cpu()  # or tvm.gpu()? what is the difference
 data = np.random.uniform(-1, 1, size=data_shape).astype("float32")
 
 # Create module
-module = graph_runtime.GraphModule(lib["default"](ctx))
+module = graph_executor.GraphModule(lib["default"](ctx))
 # Set input and parameters
 module.set_input("data", data)
 # Run
@@ -77,11 +77,12 @@ path_lib = temp.relpath("deploy_lib.tar")
 lib.export_library(path_lib)
 print(temp.listdir())
 
+print(path_lib)
 # load the module back
 loaded_lib = tvm.runtime.load_module(path_lib)
 input_data = tvm.nd.array(np.random.uniform(size=data_shape).astype("float32"))
 
-module = graph_runtime.GraphModule(loaded_lib["default"](ctx))
+module = graph_executor.GraphModule(loaded_lib["default"](ctx))
 # run forward execution of the graph
 module.run(data=input_data)
 out_deploy = module.get_output(0).asnumpy()
