@@ -8,6 +8,19 @@ from tvm.autotvm.tuner import XGBTuner, GATuner, RandomTuner, GridSearchTuner
 from tvm.autotvm.graph_tuner import DPTuner, PBQPTuner
 import tvm.contrib.graph_executor as executor
 
+
+target = "llvm -mcpu=cascadelake"
+
+batch_size = 1
+dtype = "float32"
+model_name = "resnet-18"
+log_file = "%s.log" % model_name
+graph_opt_sch_file = "%s_graph_opt.log" % model_name
+
+# Set the input name of the graph
+# For ONNX models, it is typically "0".
+input_name = "data"
+
 # Define a network in relay frontend API.
 # User can load pre-defined network from relay.testing,
 # or building relay.resting.resnet with a relay,
@@ -146,33 +159,23 @@ def tune_and_evaluate(tuning_opt):
 
 
 if __name__ == '__main__':
-    target = "llvm"
-
-    batch_size = 1
-    dtype = "float32"
-    model_name = "resnet-18"
-    log_file = "%s.log" % model_name
-    graph_opt_sch_file = "%s_graph_opt.log" % model_name
-
-    # Set the input name of the graph
-    # For ONNX models, it is typically "0".
-    input_name = "data"
 
     # Set number of threads used for tuning based on the number of
     # physical CPU cores on your machine.
-    num_threads = 10
-    os.environ["TVM_NUM_THREADS"] = str(num_threads)
+    for num_of_threads in [5, 10, 15, 20]:
+        print(f"Current use {num_of_threads} threads")
+        os.environ["TVM_NUM_THREADS"] = str(num_of_threads)
 
-    tuning_option = {
-        "log_filename": log_file,
-        "tuner": "random",
-        "early_stopping": None,
-        "measure_option": autotvm.measure_option(
-            builder=autotvm.LocalBuilder(),
-            runner=autotvm.LocalRunner(
-                number=1, repeat=10, min_repeat_ms=0, enable_cpu_cache_flush=True
+        tuning_option = {
+            "log_filename": f"{num_of_threads}-threads-{log_file}",
+            "tuner": "random",
+            "early_stopping": None,
+            "measure_option": autotvm.measure_option(
+                builder=autotvm.LocalBuilder(),
+                runner=autotvm.LocalRunner(
+                    number=1, repeat=10, min_repeat_ms=0, enable_cpu_cache_flush=True
+                ),
             ),
-        ),
-    }
+        }
 
-    tune_and_evaluate(tuning_option)
+        tune_and_evaluate(tuning_option)
