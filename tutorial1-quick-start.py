@@ -1,12 +1,10 @@
 import numpy as np
-from numpy.lib.npyio import load
-
-from tvm import relay
-from tvm.relay import testing
 import tvm
-from tvm import te
-from tvm.contrib import graph_executor
 import tvm.testing
+from numpy.lib.npyio import load
+from tvm import relay, te
+from tvm.contrib import graph_executor, utils
+from tvm.relay import testing
 
 # Define a neuralnetwork with relay python frontend.
 # User pre-defined resnet-18 network in Relay.
@@ -15,7 +13,6 @@ import tvm.testing
 # Input iamges are RGB color images of size 244 * 244.
 # Call tvm.relay.TupleWraper.astext() to show the network
 # sturcture.
-
 batch_size = 1
 num_class = 1000
 image_shape = (3, 244, 244)
@@ -43,11 +40,11 @@ mod, params = relay.testing.resnet.get_workload(
 # Then register the operators (the nodes of the optimized graph) to TVM
 # implementations to generate a tvm.module.
 # To generate the module library, TVM will first transfer the high-level
-# ID into lower intrinsic IR of the specified target backend. Then the
+# IR into lower intrinsic IR of the specified target backend. Then the
 # machine code will be generated as the module library.
 optimization_level = 3
 # There will be error here using llvm
-target = "llvm"
+target = "llvm -mcpu=cascadelake"
 with tvm.transform.PassContext(opt_level=optimization_level):
     lib = relay.build(mod, target, target_host=target, params=params)
     print(type(lib))
@@ -71,7 +68,6 @@ out = module.get_output(0, tvm.nd.empty(out_shape)).asnumpy()
 print(out.flatten()[0:10])
 
 # save the graph, lib, params into sepatate files
-from tvm.contrib import utils
 temp = utils.tempdir()
 path_lib = temp.relpath("deploy_lib.tar")
 lib.export_library(path_lib)
