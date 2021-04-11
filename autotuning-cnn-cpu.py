@@ -1,4 +1,5 @@
 import os
+import time
 import numpy as np
 
 import tvm
@@ -7,7 +8,6 @@ from tvm.relay import testing
 from tvm.autotvm.tuner import XGBTuner, GATuner, RandomTuner, GridSearchTuner
 from tvm.autotvm.graph_tuner import DPTuner, PBQPTuner
 import tvm.contrib.graph_executor as executor
-
 
 
 # Define a network in relay frontend API.
@@ -128,9 +128,12 @@ def tune_and_evaluate(tuning_opt):
 
     # compile kernels with graph-level best records
     with autotvm.apply_graph_best(graph_opt_sch_file):
-        print("Compile...")
+        # TODO: Will TVM_NUM_THREADS environ affect build and compile process?
+        print(f"Compile... with {num_of_threads} threads")
+        st = time.time()
         with tvm.transform.PassContext(opt_level=3):
             lib = relay.build_module.build(mod, target=target, params=params)
+        print(f"Compile finished with {num_of_threads} threads, time: {time.time() - st}s")
 
         # upload parameters to device
         ctx = tvm.cpu()
@@ -159,7 +162,7 @@ if __name__ == '__main__':
     # For ONNX models, it is typically "0".
     input_name = "data"
 
-    for num_of_threads in [5, 10, 15, 20]:
+    for num_of_threads in [1, 2, 5, 10, 30]:
         # Set number of threads used for tuning based on the number of
         # physical CPU cores on your machine.
         print(f"Current use {num_of_threads} threads")
