@@ -2,7 +2,7 @@
 
 COMMAND="/usr/bin/time -v \
     python3 -m tvm.driver.tvmc run \
-    --inputs ../imagenet_cat.npz \
+    --inputs ../../imagenet_cat.npz \
     --print-time \
     --repeat 200"
 
@@ -24,13 +24,11 @@ do
     module_name="docker-"$cores"cpu-resnet152-module.tar"
     echo $module_name >> $logfile_name 
     
-    EVAL_CMD="$COMMAND \
-        $module_name \
-        >> $logfile_name"
+    EVAL_CMD="$COMMAND $module_name"
 
     echo "Evaluate tuned-module with $cores in container with $corenum cores."
 
-    $EVAL_CMD
+    $EVAL_CMD >> $logfile_name
 
     echo "Evaluate tuned-module with $cores done."
 done
