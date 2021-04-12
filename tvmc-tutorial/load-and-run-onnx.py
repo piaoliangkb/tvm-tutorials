@@ -11,10 +11,12 @@ from tvm.contrib.download import download_testdata
 # https://pytorch.org/docs/stable/onnx.html
 # https://pytorch.org/tutorials/advanced/super_resolution_with_onnxruntime.html
 
-onnx_model = onnx.load("resnet50-v2-7.onnx")
+model_path = "resnet152/resnet152-v2-7.onnx"
+
+onnx_model = onnx.load(model_path)
 onnx.checker.check_model(onnx_model)
 
-session = onnxruntime.InferenceSession("resnet50-v2-7.onnx")
+session = onnxruntime.InferenceSession(model_path)
 
 # Load from npz data.
 # np.savez("imagenet_cat", data=img_data)
