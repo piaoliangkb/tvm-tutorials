@@ -19,7 +19,7 @@ logfile_name=eval-logs/$corenum-cpu-execution-time.log
 echo "Corenum: $corenum, logfile: $logfile_name"
 
 # Iterate all tuned module, evaluate and save output to file
-for cores in 60 40 20 15 10 5 1
+for cores in 60
 do
     module_name="docker-"$cores"cpu-resnet152-module.tar"
     echo $module_name >> $logfile_name 
