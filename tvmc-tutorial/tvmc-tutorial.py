@@ -21,6 +21,10 @@ norm_img_data = np.zeros(img_data.shape).astype("float32")
 for i in range(img_data.shape[0]):
     norm_img_data[i, :, :] = (img_data[i, :, :] / 255 - imagenet_mean[i]) / imagenet_stddev[i]
 
+# Stack this numpy array on first daemon
+test_img = np.stack((norm_img_data,) * 4, axis=0)  # (4, 3, 224, 224)
+np.savez("imagenet_cat_batch", data=test_img)
+
 # Add batch dimensions
 img_data = np.expand_dims(norm_img_data, axis=0)  # (1, 3, 224, 224)
 np.savez("imagenet_cat", data=img_data)
